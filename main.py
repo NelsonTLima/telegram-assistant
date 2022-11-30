@@ -38,12 +38,12 @@ def listen():
             return chat_request
 
 def answer():
-    try:
-        while True:
+    while True:
+        try:
             chat_request = listen()
             if chat_request == 'ip' or chat_request == 'Ip' or chat_request == 'IP':
                 send(requests.get('http://ifconfig.me').text)
-    except: pass
+        except: pass
 
 if __name__ == '__main__':
     answer()
