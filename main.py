@@ -1,4 +1,4 @@
-import requests, json, threading, os
+import requests, json, os
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -37,9 +37,13 @@ def listen():
         if update_id != last_update_id:
             return chat_request
 
-if __name__ == '__main__':
+def answer():
+    try:
+        while True:
+            chat_request = listen()
+            if chat_request == 'ip' or chat_request == 'Ip' or chat_request == 'IP':
+                send(requests.get('http://ifconfig.me').text)
+    except: pass
 
-    while True:
-        chat_request = listen()
-        if chat_request == 'ip' or chat_request == 'Ip' or chat_request == 'IP':
-            send(requests.get('http://ifconfig.me').text)
+if __name__ == '__main__':
+    answer()
