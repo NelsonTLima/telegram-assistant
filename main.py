@@ -14,19 +14,26 @@ def require_password():
     provided_password, chat_id = listen()
     return sha256_hash(provided_password) == stored_password
 
-def read_json():
-    with open('userData.json') as file:
-        return json.load(file)
+def read_or_initialize_json_file():
+    try:
+        with open('userData.json') as file:
+            return json.load(file)
+    except:
+        initialize_user_data = {}
+        write_json(initialize_user_data)
+        return initialize_user_data
 
 def write_json(user_data):
     with open('userData.json', 'w') as file:
         file.write(json.dumps(user_data, indent=4))
 
-def read_notes(user_data):
+def read_or_initialize_notes():
+    user_data = read_or_initialize_json_file()
     try:
         notes = user_data["notes"]
     except:
         user_data["notes"] = []
+        write_json(user_data)
         notes = user_data["notes"]
     return notes
 
@@ -54,7 +61,7 @@ def listen():
     previous_message, previous_update_id, _ = get_telegram_update()
     update_id = previous_update_id
     while update_id == previous_update_id:
-        chat_request, update_id, _ = get_telegram_update()
+        chat_request, update_id, chat_id = get_telegram_update()
     return chat_request, chat_id
 
 def send(message):
@@ -66,20 +73,16 @@ def take_note():
     send('Ok. 📝')
     note, _ = listen()
     if note.lower() != 'abort':
-        try:
-            user_data = read_json()
-            notes = read_notes(user_data)
-        except:
-            notes = []
-            user_data = {"notes" : notes}
+        notes = read_or_initialize_notes()
+        user_data = read_or_initialize_json_file()
         notes.append(note)
+        user_data['notes'] = notes
         write_json(user_data)
         send('Done.')
 
 def show_all_notes():
     try:
-        user_data = read_json()
-        notes = read_notes(user_data)
+        notes = read_or_initialize_notes()
         if len(notes) == 0:
             send("There's any note registered!")
             return
@@ -96,15 +99,14 @@ def show_all_notes():
 
 def show_specific_note(index):
     try:
-        user_data = read_json()
-        note = read_notes(user_data)[index]
+        note = read_or_initialize_notes()[index]
         send('"'+ note + '"')
     except:
         send("I couldn't find that note.")
 
 def clear_all_notes():
     try:
-        user_data = read_json()
+        user_data = read_or_initialize_json_file()
         user_data["notes"] = []
         write_json(user_data)
         send('Notes were cleared.')
@@ -157,10 +159,8 @@ def process_commands(chat_request):
 def main():
     while True:
         global chat_id
-        try:
-            chat_request, chat_id = listen()
-            process_commands(chat_request.lower())
-        except: pass
+        chat_request, chat_id = listen()
+        process_commands(chat_request.lower())
 
 if __name__ == '__main__':
     main()
