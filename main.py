@@ -159,8 +159,11 @@ def process_commands(chat_request):
 def main():
     while True:
         global chat_id
-        chat_request, chat_id = listen()
-        process_commands(chat_request.lower())
+        try:
+            chat_request, chat_id = listen()
+            process_commands(chat_request.lower())
+        except Exception as e:
+            print(e)
 
 if __name__ == '__main__':
     main()
