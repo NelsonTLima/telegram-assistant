@@ -44,19 +44,17 @@ def avoid_unfinished_words(text):
 def get_telegram_update():
     data = {"offset": -1, "limit": 1, "allowed_updates": ["message"]}
     url = f'https://api.telegram.org/bot{telegram_token}/getUpdates'
-    request = requests.get(url, data)
-    update = request.json()['result'][0]
+    update = requests.get(url, data).json()['result'][0]
     update_id = update['update_id']
     message = update['message']['text']
     chat_id = update['message']['from']['id']
-
     return message, update_id, chat_id
 
 def listen():
-    last_message, last_update_id, last_chat_id = get_telegram_update()
-    update_id = last_update_id
-    while update_id == last_update_id:
-        chat_request, update_id, chat_id = get_telegram_update()
+    previous_message, previous_update_id, _ = get_telegram_update()
+    update_id = previous_update_id
+    while update_id == previous_update_id:
+        chat_request, update_id, _ = get_telegram_update()
     return chat_request, chat_id
 
 def send(message):
@@ -66,7 +64,7 @@ def send(message):
 
 def take_note():
     send('Ok. 📝')
-    note, chat_id = listen()
+    note, _ = listen()
     if note.lower() != 'abort':
         try:
             user_data = read_json()
@@ -82,6 +80,10 @@ def show_all_notes():
     try:
         user_data = read_json()
         notes = read_notes(user_data)
+        if len(notes) == 0:
+            send("There's any note registered!")
+            return
+
         index = 1
         for note in notes:
             if len(note) <= 24:
@@ -89,8 +91,6 @@ def show_all_notes():
             else:
                 send(f'{index} - ' + avoid_unfinished_words(note[:24]) + '[...]')
             index +=1
-        if len(notes) == 0:
-            send("There's any note registered!")
     except:
         send("There's any note registered!")
 
@@ -119,7 +119,7 @@ def get_note_index(chat_request):
         send('Wich one?')
         while note_index == None:
             try:
-                index, chat_id = listen()
+                index, _ = listen()
                 note_index = int(index) - 1
             except:
                 send('A valid index number is needed.')
@@ -129,12 +129,12 @@ def send_ip():
     ip = None
     while ip == None:
         ip = requests.get('https://ifconfig.me').text
-    if str(chat_id) == str(admin_id):
-        send(ip)
-    else:
+    if str(chat_id) != str(admin_id):
         password_check = require_password()
         if password_check == True:
             send(ip)
+    else:
+        send(ip)
 
 def process_commands(chat_request):
     match chat_request:
